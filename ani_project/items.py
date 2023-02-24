@@ -21,17 +21,17 @@ class AnimeItem(scrapy.Item):
     episodes = scrapy.Field()
 
 class ReviewItem(scrapy.Item):
-    uid         = scrapy.Field() 
-    profile     = scrapy.Field()
+    username    = scrapy.Field() 
+    # profile     = scrapy.Field()
     anime_uid   = scrapy.Field()
-    text        = scrapy.Field()
-    score       = scrapy.Field()
-    scores      = scrapy.Field()
-    link        = scrapy.Field()
+    # text        = scrapy.Field()
+    rating      = scrapy.Field()
+    timestamp   = scrapy.Field()
+    # scores      = scrapy.Field()
 
-class ProfileItem(scrapy.Item):
-    profile     = scrapy.Field()
-    gender      = scrapy.Field()
-    birthday    = scrapy.Field()
-    favorites   = scrapy.Field()
-    link        = scrapy.Field()    
+# class ProfileItem(scrapy.Item):
+#     profile     = scrapy.Field()
+#     gender      = scrapy.Field()
+#     birthday    = scrapy.Field()
+#     favorites   = scrapy.Field()
+#     link        = scrapy.Field()    

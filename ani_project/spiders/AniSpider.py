@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 import scrapy
 import numpy as np
-from ani_project.items import AnimeItem, ReviewItem, ProfileItem
-
+from ani_project.items import AnimeItem, ReviewItem
 # https://myanimelist.net/topanime.php?limit=<limit>
 # 
 # scrapy runspider myanimelist/spiders/MyAnimeList.py 
@@ -58,65 +57,32 @@ class MyAnimeListSpider(scrapy.Spider):
       yield AnimeItem(**attr)
 
       # /reviews
-      yield response.follow("{}/{}".format(response.url, "reviews?p=1"), self.parse_list_review)
+      yield response.follow("{}/{}".format(response.url, "reviews?p=1"), self.parse_review)
 
 
     # https://myanimelist.net/anime/5114/Fullmetal_Alchemist__Brotherhood/reviews?p=1
-    def parse_list_review(self, response):
+    def parse_review(self, response):
       p = response.url.split("p=")[1]
 
       reviews = response.css("div.review-element.js-review-element")
       for review in reviews:
-        # Send Review Instead of Profile link
-        link = review.css("div.review-element a::attr(href)").extract_first()
-        yield response.follow(link, self.parse_review)
+        # link = review.css("div.review-element a::attr(href)").extract_first()
+        # link = link + "/reviews"
+        attr   = {}
+        attr['username']       = response.css('div.username a::text').extract_first()
+        attr['anime_uid'] = self._extract_anime_uid(response.css("a.hoverinfo_trigger ::attr(href)").extract_first())
+        attr['rating']  = response.css("div.rating  span ::text").extract_first()
+        attr['timestamp']  = response.css('div.body div.update_at::text').get() + "-" + response.css('div.body div.update_at::attr(title)').extract_first()
+        yield ReviewItem(**attr)
+
+        # yield response.follow(link, self.parse_review)
 
       # None, First Page and not last page
       next_page = response.css("div.mt4 a::attr(href)").extract()
       if next_page is not None and len(reviews) > 0 and len(next_page) > 0 and (p == '1' or len(next_page) > 1):
         next_page = next_page[0] if p == '1' else next_page[1]
         yield response.follow(next_page, self.parse_list_review)
-    
-    # https://myanimelist.net/profile/tazillo
-    def parse_review(self, response):
-      attr   = {}
-      attr['link']      = response.url
-      attr['uid']       = response.url.split("id=")[1]
-      attr['anime_uid'] = self._extract_anime_uid(response.css("a.hoverinfo_trigger ::attr(href)").extract_first())
 
-      url_profile       = response.css("div.username ::attr(href)").extract_first()
-      attr['profile']   = url_profile.split("/")[-1]
-      comment           = response.css("div.body div.text ::text").extract()
-      attr['text']      = " ".join([string.strip() for string in comment if string.strip() != ''])
-
-      scores            =  np.array(response.css("div.rating  span ::text").extract())
-      scores = dict(zip(scores[[i for i in range(12) if (i%2) == 0]], 
-                          scores[[i for i in range(12) if (i%2) == 1]] ))
-      attr['scores']    = scores
-      attr['score']     = scores['Overall']
-
-      # /review
-      yield ReviewItem(**attr)
-
-      # /profile
-      yield response.follow(url_profile, self.parse_profile)
-
-    # https://myanimelist.net/profile/<uid>
-    def parse_profile(self, response):
-      attr   = {}
-      attr['link']     = response.url
-      attr['profile']  = response.url.split("/")[-1]
-
-      url_favorites = response.css("div#anime_favorites ul li a ::attr(href)").extract()
-      attr['favorites'] = [self._extract_anime_uid(url) for url in url_favorites]
-
-      user_status   = response.css("div.user-profile ul.user-status li.clearfix ::text").extract()
-      user_status   = self._list2dict(user_status)
-
-      attr['gender']   = user_status['Gender'] if 'Gender' in user_status else ''
-      attr['birthday'] = user_status['Birthday'] if 'Birthday' in user_status else ''
-
-      yield ProfileItem(**attr)
 
     def _extract_anime_uid(self, url):
       return url.split("/")[4]

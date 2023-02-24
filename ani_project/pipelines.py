@@ -8,7 +8,7 @@
 import json
 import os
 import numpy as np
-from ani_project.items import AnimeItem, ReviewItem, ProfileItem
+from ani_project.items import AnimeItem, ReviewItem
 
 class ProcessPipeline(object):
 
